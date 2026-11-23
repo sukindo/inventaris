@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner QR Inventaris Kreasindo</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px #0002;
+    }
+
+    h2 { color: #17365d; }
+
+    #reader {
+      width: 100%;
+      margin: 20px auto;
+    }
+
+    button {
+      padding: 13px 20px;
+      margin: 8px;
+      border: none;
+      border-radius: 8px;
+      background: #1769aa;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    #hasil {
+      margin-top: 20px;
+      padding: 15px;
+      background: #eef5ff;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    #status {
+      color: #555;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>SCANNER QR INVENTARIS</h2>
+    <p>Solusi Utama Kreasindo</p>
+
+    <div id="reader"></div>
+
+    <p id="status">Tekan tombol Mulai Scanner untuk mengaktifkan kamera.</p>
+
+    <div id="hasil" hidden>
+      <strong>QR berhasil dibaca:</strong>
+      <p id="kode"></p>
+      <button onclick="salinKode()">Salin Kode Alat</button>
+    </div>
+
+    <button id="btnMulai" onclick="mulaiScanner()">Mulai Scanner</button>
+    <button id="btnStop" onclick="stopScanner()" disabled>Hentikan Kamera</button>
+  </div>
+
+  <script>
+    let scanner = null;
+    let kodeTerbaca = "";
+
+    async function mulaiScanner() {
+      const status = document.getElementById("status");
+
+      if (typeof Html5Qrcode === "undefined") {
+        status.textContent = "Library scanner gagal dimuat. Periksa koneksi internet.";
+        return;
+      }
+
+      try {
+        status.textContent = "Meminta izin kamera...";
+
+        scanner = new Html5Qrcode("reader");
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          function(decodedText) {
+            kodeTerbaca = decodedText;
+
+            document.getElementById("kode").textContent = decodedText;
+            document.getElementById("hasil").hidden = false;
+            status.textContent = "QR berhasil dibaca.";
+
+            stopScanner();
+          },
+          function() {}
+        );
+
+        status.textContent = "Kamera aktif. Arahkan kamera ke QR alat.";
+        document.getElementById("btnMulai").disabled = true;
+        document.getElementById("btnStop").disabled = false;
+
+      } catch (error) {
+        status.textContent = "Kamera gagal dibuka: " + error;
+      }
+    }
+
+    async function stopScanner() {
+      if (scanner && scanner.isScanning) {
+        try {
+          await scanner.stop();
+          await scanner.clear();
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      document.getElementById("btnMulai").disabled = false;
+      document.getElementById("btnStop").disabled = true;
+    }
+
+    async function salinKode() {
+      if (!kodeTerbaca) return;
+
+      try {
+        await navigator.clipboard.writeText(kodeTerbaca);
+        document.getElementById("status").textContent = "Kode berhasil disalin.";
+      } catch (error) {
+        document.getElementById("status").textContent =
+          "Tidak dapat menyalin otomatis. Silakan salin kode secara manual.";
+      }
+    }
+  </script>
+</body>
+</html>
