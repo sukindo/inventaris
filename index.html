@@ -105,15 +105,25 @@
             fps: 10,
             qrbox: { width: 250, height: 250 }
           },
-          function(decodedText) {
-            kodeTerbaca = decodedText;
+       
+async function(decodedText) {
+    kodeTerbaca = decodedText;
 
-            document.getElementById("kode").textContent = decodedText;
-            document.getElementById("hasil").hidden = false;
-            status.textContent = "QR berhasil dibaca.";
+    status.textContent = "QR berhasil dibaca. Kembali ke Inventaris...";
 
-            stopScanner();
-          },
+    try {
+        await stopScanner();
+    } catch (error) {
+        console.error("Gagal menghentikan kamera:", error);
+    }
+
+    const webAppUrl =
+        "https://script.google.com/macros/s/AKfycbzKJ97L26HM3nQUS3d15y1JTbz4LpMQcEKrCXLpTeTDZxwUoy0Gq5TInCWDQRKqF9IV/exec";
+
+    window.location.replace(
+        webAppUrl + "?id=" + encodeURIComponent(decodedText)
+    );
+},
           function() {}
         );
 
