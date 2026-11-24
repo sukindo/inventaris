@@ -958,6 +958,13 @@ function adminLogout() {
   });
 
   window.addEventListener('message', function(event) {
+    console.log("PESAN DITERIMA:", {
+      origin: event.origin,
+      data: event.data,
+      sumberCocok: !!bridgeFrame &&
+        event.source === bridgeFrame.contentWindow
+    });
+
     // Hanya menerima pesan dari iframe Bridge yang kita pasang.
     if (!bridgeFrame || event.source !== bridgeFrame.contentWindow) return;
 
