@@ -1004,31 +1004,7 @@ window.addEventListener('message', function(event) {
 });
 
 
-    // Hanya menerima pesan dari iframe Bridge yang kita pasang.
-    if (!bridgeFrame || event.source !== bridgeFrame.contentWindow) return;
-
-    const data = event.data || {};
-
-    if (data.type === 'INVENTORY_BRIDGE_READY') {
-      bridgeReady = true;
-      resolveBridgeReady();
-      return;
-    }
-
-    if (data.type !== 'INVENTORY_RESPONSE') return;
-
-    const pending = pendingRequests.get(data.requestId);
-    if (!pending) return;
-
-    clearTimeout(pending.timeout);
-    pendingRequests.delete(data.requestId);
-
-    if (data.success) {
-      pending.resolve(data.result);
-    } else {
-      pending.reject(new Error(data.error || 'Terjadi kesalahan pada backend.'));
-    }
-  });
+    
 
   async function callBackend(action, ...args) {
     if (!bridgeReady) {
