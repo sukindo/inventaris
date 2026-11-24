@@ -957,7 +957,7 @@ function adminLogout() {
     resolveBridgeReady = resolve;
   });
 
-  window.addEventListener('message', function(event) {
+ window.addEventListener('message', function(event) {
     console.log("PESAN DITERIMA:", {
       origin: event.origin,
       data: event.data,
