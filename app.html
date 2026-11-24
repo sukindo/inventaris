@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta http-equiv="Permissions-Policy"
+        content="camera=(self), microphone=()">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Library scanner QR Code dengan CDN cadangan -->
+
+<!-- Library scanner QR Code dengan CDN cadangan -->
+<script
+  src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
+  onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js';">
+</script>
+
+<script>
+/**************************************************
+ * NAVIGASI HALAMAN INVENTARIS
+ **************************************************/
+
+function openStaffPage() {
+  document.getElementById('portalPage').classList.add('hidden');
+  document.getElementById('staffPage').classList.remove('hidden');
+}
+
+function showAdminLogin() {
+  document.getElementById('portalPage').classList.add('hidden');
+  document.getElementById('adminLoginPage').classList.remove('hidden');
+}
+
+
+function backToPortal() {
+  document.getElementById('adminLoginPage').classList.add('hidden');
+  document.getElementById('adminDashboardPage').classList.add('hidden');
+  document.getElementById('staffPage').classList.add('hidden');
+  document.getElementById('portalPage').classList.remove('hidden');
+}
+
+
+let adminToken = null;
+</script>
+
+<script>
+/**************************************************
+ * LOGIN ADMIN
+ **************************************************/
+
+function loginAdminPage() {
+  const username = document.getElementById('adminUsername').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const status = document.getElementById('adminLoginStatus');
+
+  if (!username || !password) {
+    status.textContent = 'Username dan password wajib diisi.';
+    status.className = 'status error';
+    return;
+  }
+
+  status.textContent = 'Memeriksa login...';
+  status.className = 'status success';
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (!result || !result.success) {
+        status.textContent = result ? result.message : 'Login gagal.';
+        status.className = 'status error';
+        return;
+      }
+
+      adminToken = result.token;
+
+      document.getElementById('adminLoginPage').classList.add('hidden');
+      document.getElementById('adminDashboardPage').classList.remove('hidden');
+
+      document.getElementById('adminPassword').value = '';
+      status.textContent = '';
+      status.className = 'status';
+    })
+    .withFailureHandler(function(error) {
+      status.textContent = error.message || 'Terjadi kesalahan saat login.';
+      status.className = 'status error';
+    })
+    .loginAdmin(username, password);
+}
+</script>
+
+<script>
+/**************************************************
+ * DATABASE INVENTARIS ADMIN
+ **************************************************/
+
+
+function loadAdminInventory() {
+  const status = document.getElementById('adminStatus');
+  const content = document.getElementById('adminContent');
+  const title = document.getElementById('adminContentTitle');
+  const body = document.getElementById('adminContentBody');
+
+  status.textContent = 'Memuat database inventaris...';
+  status.className = 'status success';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      title.textContent = 'DATABASE INVENTARIS';
+      content.classList.remove('hidden');
+
+      if (!data || data.length === 0) {
+        body.innerHTML = '<p>Belum ada data inventaris.</p>';
+        status.textContent = '';
+        status.className = 'status';
+        return;
+      }
+
+      let html = '<div style="overflow-x:auto;">';
+      html += '<table style="width:100%;border-collapse:collapse;">';
+      html += '<tr>';
+      html += '<th>ID</th><th>Nama Alat</th><th>Total</th>';
+      html += '<th>Dipakai</th><th>Tersedia</th><th>Aksi</th>';
+      html += '</tr>';
+
+      data.forEach(function(item) {
+        html += '<tr>';
+        html += '<td>' + escapeAdminHtml(item.id) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.nama) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.total) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.digunakan) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.tersedia) + '</td>';
+
+        html += '<td>';
+        html += '<button type="button" onclick="editAdminItem(this)"';
+        html += ' data-id="' + escapeAdminHtml(item.id) + '"';
+        html += ' data-nama="' + escapeAdminHtml(item.nama) + '"';
+        html += ' data-total="' + escapeAdminHtml(item.total) + '"';
+        html += ' data-kondisi="' + escapeAdminHtml(item.kondisi || '') + '"';
+        html += ' data-lokasi="' + escapeAdminHtml(item.lokasi || '') + '"';
+        html += ' data-keterangan="' + escapeAdminHtml(item.keterangan || '') + '">';
+        html += 'EDIT</button>';
+        html += '</td>';
+
+        html += '</tr>';
+      });
+
+      html += '</table></div>';
+
+      body.innerHTML = html;
+
+      status.textContent = 'Database berhasil dimuat. Total: ' + data.length + ' alat.';
+      status.className = 'status success';
+    })
+    .withFailureHandler(function(error) {
+      status.textContent = error.message || 'Gagal memuat database.';
+      status.className = 'status error';
+    })
+    .adminGetInventory(adminToken);
+}
+
+
+// MEMBUKA FORM EDIT INVENTARIS
+function editAdminItem(button) {
+  const body = document.getElementById('adminContentBody');
+
+  const id = button.dataset.id;
+  const nama = button.dataset.nama;
+  const total = button.dataset.total;
+  const kondisi = button.dataset.kondisi;
+  const lokasi = button.dataset.lokasi;
+  const keterangan = button.dataset.keterangan;
+
+  let html = '<h3>EDIT DATA INVENTARIS</h3>';
+
+  html += '<p><b>ID Alat:</b> ' + escapeAdminHtml(id) + '</p>';
+
+  html += '<label>Nama Alat</label>';
+  html += '<input type="text" id="editNama" value="' +
+    escapeAdminHtml(nama) + '" style="width:100%;margin-bottom:12px;">';
+
+  html += '<label>Total Alat</label>';
+  html += '<input type="number" id="editTotal" min="0" step="1" value="' +
+    escapeAdminHtml(total) + '" style="width:100%;margin-bottom:12px;">';
+
+  html += '<p><b>Dipakai:</b> Tidak dapat diubah manual.</p>';
+  html += '<p><b>Tersedia:</b> Dihitung otomatis setelah disimpan.</p>';
+
+  html += '<label>Kondisi</label>';
+  html += '<input type="text" id="editKondisi" value="' +
+    escapeAdminHtml(kondisi) + '" style="width:100%;margin-bottom:12px;">';
+
+  html += '<label>Lokasi / PIC</label>';
+  html += '<input type="text" id="editLokasi" value="' +
+    escapeAdminHtml(lokasi) + '" style="width:100%;margin-bottom:12px;">';
+
+  html += '<label>Keterangan</label>';
+  html += '<textarea id="editKeterangan" style="width:100%;margin-bottom:12px;">' +
+    escapeAdminHtml(keterangan) + '</textarea>';
+
+  html += '<br><button type="button" onclick="saveAdminItem(this)"';
+html += ' data-id="' + escapeAdminHtml(id) + '">';
+html += 'SIMPAN PERUBAHAN</button> ';
+
+  html += '<button type="button" onclick="loadAdminInventory()">BATAL</button>';
+
+  body.innerHTML = html;
+}
+
+
+function saveAdminItem(button) {
+  const id = button.dataset.id;
+  const status = document.getElementById('adminStatus');
+
+  const form = {
+    id: id,
+    nama: document.getElementById('editNama').value.trim(),
+    total: document.getElementById('editTotal').value,
+    kondisi: document.getElementById('editKondisi').value.trim(),
+    lokasi: document.getElementById('editLokasi').value.trim(),
+    keterangan: document.getElementById('editKeterangan').value.trim()
+  };
+
+  if (!form.nama) {
+    alert('Nama alat tidak boleh kosong.');
+    return;
+  }
+
+  if (
+    form.total === '' ||
+    !Number.isInteger(Number(form.total)) ||
+    Number(form.total) < 0
+  ) {
+    alert('Total alat harus berupa angka bulat minimal 0.');
+    return;
+  }
+
+  status.textContent = 'Menyimpan perubahan...';
+  status.className = 'status success';
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      alert(result.message || 'Data berhasil diperbarui.');
+
+      loadAdminInventory();
+    })
+    .withFailureHandler(function(error) {
+      status.textContent = error.message || 'Gagal menyimpan perubahan.';
+      status.className = 'status error';
+
+      alert(status.textContent);
+    })
+    .adminUpdateInventory(adminToken, form);
+}
+
+function escapeAdminHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char];
+  });
+}
+</script>
+
+<script>
+/**************************************************
+ * RIWAYAT TRANSAKSI ADMIN
+ **************************************************/
+
+function loadAdminHistory() {
+  const status = document.getElementById('adminStatus');
+  const content = document.getElementById('adminContent');
+  const title = document.getElementById('adminContentTitle');
+  const body = document.getElementById('adminContentBody');
+
+  status.textContent = 'Memuat riwayat transaksi...';
+  status.className = 'status success';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      title.textContent = 'RIWAYAT TRANSAKSI';
+      content.classList.remove('hidden');
+
+      if (!data || data.length === 0) {
+        body.innerHTML = '<p>Belum ada riwayat transaksi.</p>';
+        status.textContent = '';
+        status.className = 'status';
+        return;
+      }
+
+      let html = '<div style="overflow-x:auto;">';
+      html += '<table style="width:100%;border-collapse:collapse;">';
+      html += '<tr>';
+      html += '<th>Tanggal</th><th>ID Alat</th><th>Nama Alat</th>';
+      html += '<th>Transaksi</th><th>Jumlah</th><th>PIC</th>';
+      html += '</tr>';
+
+      data.forEach(function(item) {
+        html += '<tr>';
+        html += '<td>' + escapeAdminHtml(item.tanggal) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.id) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.nama) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.transaksi) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.jumlah) + '</td>';
+        html += '<td>' + escapeAdminHtml(item.pic) + '</td>';
+        html += '</tr>';
+      });
+
+      html += '</table></div>';
+      body.innerHTML = html;
+
+      status.textContent = 'Riwayat berhasil dimuat. Total: ' + data.length + ' transaksi.';
+      status.className = 'status success';
+    })
+    .withFailureHandler(function(error) {
+      status.textContent = error.message || 'Gagal memuat riwayat transaksi.';
+      status.className = 'status error';
+    })
+    .adminGetHistory(adminToken);
+}
+</script>
+
+<script>
+/**************************************************
+ * LOGOUT ADMIN
+ **************************************************/
+
+function adminLogout() {
+  const token = adminToken;
+
+  adminToken = null;
+
+  function kembaliKePortal() {
+    document.getElementById('adminDashboardPage').classList.add('hidden');
+    document.getElementById('adminLoginPage').classList.add('hidden');
+    document.getElementById('portalPage').classList.remove('hidden');
+
+    document.getElementById('adminContent').classList.add('hidden');
+    document.getElementById('adminStatus').textContent = '';
+    document.getElementById('adminStatus').className = 'status';
+
+    document.getElementById('adminUsername').value = '';
+    document.getElementById('adminPassword').value = '';
+  }
+
+  if (!token) {
+    kembaliKePortal();
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function() {
+      kembaliKePortal();
+    })
+    .withFailureHandler(function() {
+      kembaliKePortal();
+    })
+    .logoutAdmin(token);
+}
+</script>
+<script>
+  function openExternalScanner() {
+  const scannerUrl =
+    "https://sukindoho-cmyk.github.io/scanner-inventaris-kreasindo/";
+
+  window.open(scannerUrl, "_blank");
+}
+
+  async function diagnoseCamera() {
+    const result = {
+      secureContext: window.isSecureContext,
+      cameraAPI: !!navigator.mediaDevices,
+      getUserMedia: !!navigator.mediaDevices?.getUserMedia,
+      insideIframe: window.self !== window.top,
+      permission: 'unknown'
+    };
+
+    try {
+      const permission = await navigator.permissions.query({
+        name: 'camera'
+      });
+
+      result.permission = permission.state;
+    } catch (e) {
+      result.permission = e.message;
+    }
+
+    console.table(result);
+    return result;
+  }
+</script>
+<script>
+  
+  let scanner = null;
+  let scanning = false;
+  let currentItem = null;
+  let busy = false;
+
+  function showStatus(message, type) {
+    const el = document.getElementById('status');
+    el.textContent = message;
+    el.className = 'status ' + type;
+  }
+
+  function hideStatus() {
+    const el = document.getElementById('status');
+    el.className = 'status';
+    el.textContent = '';
+  }
+
+  // Meminta izin kamera melalui browser.
+  // Browser tetap memerlukan persetujuan pengguna.
+  async function requestCameraPermission() {
+    if (!window.isSecureContext) {
+      throw new Error(
+        'Web App tidak berada pada koneksi aman HTTPS. ' +
+        'Buka URL Web App resmi dari Google Apps Script.'
+      );
+    }
+
+    if (!navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        'Browser tidak mendukung akses kamera. ' +
+        'Gunakan Chrome versi terbaru.'
+      );
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' }
+      },
+      audio: false
+    });
+
+    // Lepaskan kamera sementara.
+    // html5-qrcode akan membuka kamera untuk proses scan.
+    stream.getTracks().forEach(function(track) {
+      track.stop();
+    });
+  }
+
+  async function startScanner() {
+    if (scanning || busy) return;
+
+    const scanBtn = document.getElementById('scanBtn');
+
+    if (typeof Html5Qrcode === 'undefined') {
+      showStatus(
+        'Library pemindai QR gagal dimuat. Periksa koneksi internet.',
+        'error'
+      );
+      return;
+    }
+
+    scanBtn.disabled = true;
+    scanBtn.textContent = 'MEMINTA IZIN KAMERA...';
+
+    try {
+      showStatus(
+        'Mohon izinkan akses kamera jika Chrome menampilkan permintaan izin.',
+        'success'
+      );
+
+      // Tahap 1: minta izin kamera.
+      await requestCameraPermission();
+
+      // Tahap 2: siapkan scanner.
+      if (!scanner) {
+        scanner = new Html5Qrcode('reader');
+      }
+
+      showStatus(
+        'Izin kamera berhasil. Sedang mengaktifkan pemindai...',
+        'success'
+      );
+
+      // Tahap 3: mulai kamera belakang.
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: {
+            width: 230,
+            height: 230
+          },
+          aspectRatio: 1.0
+        },
+        function(decodedText) {
+          if (busy) return;
+
+          busy = true;
+
+          showStatus(
+            'QR berhasil terbaca: ' + decodedText,
+            'success'
+          );
+
+          scanner.stop().then(function() {
+            scanning = false;
+            updateScannerButtons();
+            busy = false;
+
+            // Gunakan fungsi pencarian alat yang sudah ada.
+            searchItem(decodedText);
+
+          }).catch(function(err) {
+            console.error('Gagal menghentikan kamera:', err);
+
+            scanning = false;
+            updateScannerButtons();
+            busy = false;
+
+            searchItem(decodedText);
+          });
+        },
+        function() {
+          // Frame belum menemukan QR.
+        }
+      );
+
+      scanning = true;
+      updateScannerButtons();
+
+      showStatus(
+        'Kamera aktif. Arahkan kamera ke QR Code alat.',
+        'success'
+      );
+
+    } catch (err) {
+      console.error('Kesalahan kamera:', err);
+
+      scanning = false;
+      updateScannerButtons();
+
+      let message = 'Kamera tidak dapat diaktifkan. ';
+
+      if (err.name === 'NotAllowedError' ||
+          err.name === 'PermissionDeniedError') {
+        message =
+          'Izin kamera ditolak. Klik ikon pengaturan situs di sebelah alamat Chrome, pilih Kamera, lalu Izinkan.';
+      } else if (err.name === 'NotFoundError') {
+        message =
+          'Kamera tidak ditemukan. Pastikan perangkat memiliki kamera.';
+      } else if (err.name === 'NotReadableError') {
+        message =
+          'Kamera sedang digunakan aplikasi lain. Tutup aplikasi kamera lain lalu coba kembali.';
+      } else if (err.name === 'NotSupportedError') {
+        message =
+          'Akses kamera tidak didukung. Pastikan Web App dibuka melalui HTTPS.';
+      } else if (err.name === 'OverconstrainedError') {
+        message =
+          'Kamera belakang tidak tersedia. Periksa kamera perangkat.';
+      } else if (err.message) {
+        message = err.message;
+      }
+
+      showStatus(message, 'error');
+
+    } finally {
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'AKTIFKAN KAMERA';
+    }
+  }
+
+  function stopScanner() {
+    if (!scanner || !scanning) return;
+
+    scanner.stop().then(function() {
+      scanning = false;
+      updateScannerButtons();
+
+      showStatus('Kamera berhasil dimatikan.', 'success');
+
+    }).catch(function(err) {
+      console.error(err);
+      showStatus('Kamera gagal dimatikan: ' + err, 'error');
+    });
+  }
+
+  function updateScannerButtons() {
+    document.getElementById('scanBtn')
+      .classList.toggle('hidden', scanning);
+
+    document.getElementById('stopBtn')
+      .classList.toggle('hidden', !scanning);
+  }
+
+  function manualSearch() {
+    const id = document.getElementById('manualId').value.trim();
+
+    if (!id) {
+      showStatus('Masukkan ID alat terlebih dahulu.', 'error');
+      return;
+    }
+
+    searchItem(id);
+  }
+
+  function searchItem(id) {
+    hideStatus();
+
+    google.script.run
+      .withSuccessHandler(function(item) {
+        currentItem = item;
+
+        document.getElementById('itemId').textContent = item.id;
+        document.getElementById('itemName').textContent = item.name || '-';
+        document.getElementById('itemTotal').textContent = item.total;
+        document.getElementById('itemUsed').textContent = item.used;
+        document.getElementById('itemAvailable').textContent = item.available;
+        document.getElementById('itemCondition').textContent =
+          item.condition || '-';
+        document.getElementById('itemLocation').textContent =
+          item.location || '-';
+
+        displayItemPhoto(item.photo);
+
+        document.getElementById('transactionCard')
+          .classList.remove('hidden');
+
+        document.getElementById('manualId').value = '';
+
+        showStatus('Alat berhasil ditemukan.', 'success');
+      })
+      .withFailureHandler(function(err) {
+        showStatus(
+          (err && err.message) ? err.message : 'Alat tidak ditemukan.',
+          'error'
+        );
+      })
+      .getItem(id);
+  }
+
+  function displayItemPhoto(photoDataUrl) {
+    const photo = document.getElementById('itemPhoto');
+    const placeholder = document.getElementById('photoPlaceholder');
+
+    photo.onerror = null;
+    photo.removeAttribute('src');
+    photo.classList.add('hidden');
+
+    if (!photoDataUrl) {
+      placeholder.classList.remove('hidden');
+      placeholder.textContent =
+        'Foto belum tersedia atau file foto tidak dapat diakses.';
+      return;
+    }
+
+    photo.onload = function() {
+      photo.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    };
+
+    photo.onerror = function() {
+      photo.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+      placeholder.textContent = 'Foto tidak dapat ditampilkan.';
+    };
+
+    photo.src = photoDataUrl;
+  }
+
+  function saveData() {
+    if (!currentItem) {
+      showStatus('Scan atau cari alat terlebih dahulu.', 'error');
+      return;
+    }
+
+    const form = {
+      id: currentItem.id,
+      type: document.getElementById('type').value,
+      qty: document.getElementById('qty').value,
+      pic: document.getElementById('pic').value,
+      note: document.getElementById('note').value
+    };
+
+    if (!form.pic.trim()) {
+      showStatus('Nama PIC wajib diisi.', 'error');
+      return;
+    }
+
+    if (!Number.isInteger(Number(form.qty)) ||
+        Number(form.qty) <= 0) {
+      showStatus(
+        'Jumlah alat harus berupa bilangan bulat lebih dari 0.',
+        'error'
+      );
+      return;
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'MENYIMPAN...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        btn.textContent = 'SIMPAN TRANSAKSI';
+
+        showStatus(
+          result.message +
+          ' | Tersedia: ' + result.available +
+          ' | Dipakai: ' + result.used,
+          'success'
+        );
+
+        resetForm(false);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'SIMPAN TRANSAKSI';
+
+        showStatus(
+          (err && err.message)
+            ? err.message
+            : 'Gagal menyimpan transaksi.',
+          'error'
+        );
+      })
+      .saveTransaction(form);
+  }
+
+  function resetForm(restart = true) {
+    currentItem = null;
+
+    document.getElementById('transactionCard')
+      .classList.add('hidden');
+
+    document.getElementById('qty').value = 1;
+    document.getElementById('pic').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('type').value = 'KELUAR';
+    document.getElementById('manualId').value = '';
+
+    displayItemPhoto(null);
+
+    if (restart) {
+      hideStatus();
+    }
+  }
+
+  // Kamera tidak dijalankan otomatis saat halaman dibuka.
+  // Izin diminta ketika tombol AKTIFKAN KAMERA ditekan.
+  window.addEventListener('load', function() {
+  const initialId =
+    new URLSearchParams(window.location.search).get('id') ||
+    document.getElementById('initialItemId').value.trim();
+
+  if (initialId) {
+    document.getElementById('portalPage').classList.add('hidden');
+    document.getElementById('staffPage').classList.remove('hidden');
+
+    searchItem(initialId);
+  }
+});
+</script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      
+      font-family: Arial, sans-serif;
+      background: #f1f4f8;
+      margin: 0;
+      padding: 16px;
+      color: #263445;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: auto;
+    }
+
+    .header {
+      background: #1f4e78;
+      color: white;
+      text-align: center;
+      padding: 22px 15px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+    }
+
+    .header h2 {
+      margin: 0 0 6px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px #00000010;
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 14px 0 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #ccd4df;
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 9px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-scan {
+      background: #1f4e78;
+      color: white;
+    }
+
+    .btn-stop {
+      background: #64748b;
+      color: white;
+    }
+
+    .btn-save {
+      background: #18864b;
+      color: white;
+    }
+
+    .btn-manual {
+      background: #e8edf4;
+      color: #263445;
+    }
+
+    .btn-reset {
+      background: #64748b;
+      color: white;
+    }
+
+    .item-info {
+      background: #edf4fa;
+      padding: 13px;
+      border-radius: 9px;
+      margin-top: 12px;
+      line-height: 1.8;
+      overflow-wrap: anywhere;
+    }
+
+    .item-photo-wrap {
+      margin: 15px 0;
+      background: #f1f4f8;
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .item-photo {
+      display: block;
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 9px;
+    }
+
+    .photo-caption {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+
+    .photo-placeholder {
+      padding: 35px 10px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin: 12px 0;
+      display: none;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .success {
+      display: block;
+      background: #d9f5e5;
+      color: #126b38;
+    }
+
+    .error {
+      display: block;
+      background: #ffe1e1;
+      color: #a32222;
+    }
+
+    .footer {
+      text-align: center;
+      color: #718096;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- KONEKSI BACKEND GOOGLE APPS SCRIPT -->
+<iframe
+  id="inventoryBridge"
+  src="https://script.google.com/macros/s/AKfycbzKJ97L26HM3nQUS3d15y1JTbz4LpMQcEKrCXLpTeTDZxwUoy0Gq5TInCWDQRKqF9IV/exec?bridge=1"
+  title="Koneksi database inventaris"
+  style="display:none"
+></iframe>
+
+<script>
+/*
+ * Penghubung halaman GitHub Pages dengan backend Google Apps Script.
+ * Bentuk google.script.run dipertahankan agar fungsi aplikasi lama
+ * tidak perlu diubah satu per satu.
+ */
+(function () {
+  const bridgeFrame = document.getElementById('inventoryBridge');
+  const pendingRequests = new Map();
+  let requestCounter = 0;
+  let bridgeReady = false;
+  let resolveBridgeReady;
+
+  const bridgeReadyPromise = new Promise(function(resolve) {
+    resolveBridgeReady = resolve;
+  });
+
+  window.addEventListener('message', function(event) {
+    // Hanya menerima pesan dari iframe Bridge yang kita pasang.
+    if (!bridgeFrame || event.source !== bridgeFrame.contentWindow) return;
+
+    const data = event.data || {};
+
+    if (data.type === 'INVENTORY_BRIDGE_READY') {
+      bridgeReady = true;
+      resolveBridgeReady();
+      return;
+    }
+
+    if (data.type !== 'INVENTORY_RESPONSE') return;
+
+    const pending = pendingRequests.get(data.requestId);
+    if (!pending) return;
+
+    clearTimeout(pending.timeout);
+    pendingRequests.delete(data.requestId);
+
+    if (data.success) {
+      pending.resolve(data.result);
+    } else {
+      pending.reject(new Error(data.error || 'Terjadi kesalahan pada backend.'));
+    }
+  });
+
+  async function callBackend(action, ...args) {
+    if (!bridgeReady) {
+      await Promise.race([
+        bridgeReadyPromise,
+        new Promise(function(_, reject) {
+          setTimeout(function() {
+            reject(new Error('Koneksi ke database belum siap. Muat ulang halaman dan coba lagi.'));
+          }, 20000);
+        })
+      ]);
+    }
+
+    return new Promise(function(resolve, reject) {
+      const requestId = 'req-' + (++requestCounter);
+
+      const timeout = setTimeout(function() {
+        pendingRequests.delete(requestId);
+        reject(new Error('Backend tidak merespons. Periksa koneksi internet lalu coba lagi.'));
+      }, 30000);
+
+      pendingRequests.set(requestId, {
+        resolve: resolve,
+        reject: reject,
+        timeout: timeout
+      });
+
+      bridgeFrame.contentWindow.postMessage({
+        type: 'INVENTORY_REQUEST',
+        requestId: requestId,
+        action: action,
+        args: args
+      }, '*');
+    });
+  }
+
+  // Adapter agar pemanggilan google.script.run lama tetap kompatibel.
+  function createRunner(successHandler, failureHandler) {
+    return new Proxy({}, {
+      get: function(_, property) {
+        if (property === 'withSuccessHandler') {
+          return function(handler) {
+            return createRunner(handler, failureHandler);
+          };
+        }
+
+        if (property === 'withFailureHandler') {
+          return function(handler) {
+            return createRunner(successHandler, handler);
+          };
+        }
+
+        if (property === 'withUserObject') {
+          return function() {
+            return createRunner(successHandler, failureHandler);
+          };
+        }
+
+        return function(...args) {
+          callBackend(String(property), ...args)
+            .then(function(result) {
+              if (typeof successHandler === 'function') successHandler(result);
+            })
+            .catch(function(error) {
+              if (typeof failureHandler === 'function') {
+                failureHandler(error);
+              } else {
+                console.error('Backend error:', error);
+                alert(error.message || 'Terjadi kesalahan saat menghubungi database.');
+              }
+            });
+        };
+      }
+    });
+  }
+
+  window.google = {
+    script: {
+      run: createRunner(null, null)
+    }
+  };
+})();
+</script>
+
+  <!-- HALAMAN PORTAL UTAMA -->
+<div id="portalPage">
+  <div class="container">
+
+    <div class="header">
+      <h2>INVENTARIS KREASINDO</h2>
+      <div>Sistem Manajemen Inventaris Alat</div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h3>SELAMAT DATANG</h3>
+      <p>Silakan pilih menu untuk melanjutkan.</p>
+
+      <button
+        class="btn-scan"
+        onclick="showAdminLogin()">
+        ADMIN
+      </button>
+
+      <button
+        class="btn-save"
+        onclick="openStaffPage()">
+        STAF
+      </button>
+    </div>
+
+    
+ <div class="footer">
+    SOLUSI UTAMA KREASINDO
+    <br>
+    <span style="font-size: 11px; opacity: 0.8;">
+      Manage Apps By M.Rizky Fauzan
+    </span>
+  </div>
+
+
+  </div>
+</div>
+<!-- DASHBOARD ADMIN -->
+<div id="adminDashboardPage" class="hidden">
+  <div class="container">
+
+    <div class="header">
+      <h2>DASHBOARD ADMIN</h2>
+      <div>Inventaris Kreasindo</div>
+    </div>
+
+    <div class="card">
+      <h3>MENU ADMIN</h3>
+
+      <button
+        class="btn-scan"
+        onclick="loadAdminInventory()">
+        DATABASE INVENTARIS
+      </button>
+
+      <button
+        class="btn-save"
+        onclick="loadAdminHistory()">
+        RIWAYAT TRANSAKSI
+      </button>
+
+      <button
+        class="btn-reset"
+        onclick="adminLogout()">
+        LOGOUT
+      </button>
+    </div>
+
+    <div id="adminContent" class="card hidden">
+      <h3 id="adminContentTitle">DATA ADMIN</h3>
+      <div id="adminContentBody"></div>
+    </div>
+
+    <div
+      id="adminStatus"
+      class="status"
+      role="status">
+    </div>
+
+  </div>
+</div>
+  <!-- HALAMAN LOGIN ADMIN -->
+<div id="adminLoginPage" class="hidden">
+  <div class="container">
+
+    <div class="header">
+      <h2>LOGIN ADMIN</h2>
+      <div>Inventaris Kreasindo</div>
+    </div>
+
+    <div class="card">
+
+      <h3>Masuk sebagai Admin</h3>
+
+      <label for="adminUsername">Username</label>
+      <input
+        type="text"
+        id="adminUsername"
+        placeholder="Masukkan username"
+      >
+
+      <label for="adminPassword">Password</label>
+      <input
+        type="password"
+        id="adminPassword"
+        placeholder="Masukkan password"
+      >
+
+      <button
+        class="btn-scan"
+        onclick="loginAdminPage()">
+        LOGIN ADMIN
+      </button>
+
+      <button
+        class="btn-reset"
+        onclick="backToPortal()">
+        KEMBALI
+      </button>
+
+      <div
+        id="adminLoginStatus"
+        class="status"
+        role="status">
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<div id="staffPage" class="hidden">
+  <button type="button" onclick="backToPortal()">
+  ← KEMBALI KE MENU AWAL
+</button>
+
+<input
+  type="hidden"
+  id="initialItemId"
+  value=""
+>
+<div class="container">
+
+  <div class="header">
+    <h2>INVENTARIS KREASINDO</h2>
+    <div>Sistem Peminjaman & Pengembalian Alat</div>
+  </div>
+
+  <div class="card">
+    <h3>1. Scan QR Code Alat</h3>
+    <div id="reader"></div>
+
+    <button class="btn-scan" id="scanBtn" onclick="startScanner()">
+  AKTIFKAN KAMERA
+    </button>
+
+    <button class="btn-stop hidden" id="stopBtn" onclick="stopScanner()">
+      MATIKAN KAMERA
+    </button>
+
+    <label for="manualId">Atau masukkan ID alat secara manual</label>
+    <input id="manualId" placeholder="Contoh: ALT-001">
+
+    <button class="btn-manual" onclick="manualSearch()">
+      CARI ALAT
+    </button>
+  </div>
+
+  <div id="transactionCard" class="card hidden">
+    <h3>2. Informasi Alat</h3>
+
+    <!-- Foto diambil dari Google Drive berdasarkan ID di kolom J -->
+    <div class="item-photo-wrap">
+      <img
+        id="itemPhoto"
+        class="item-photo hidden"
+        alt="Foto alat inventaris"
+      >
+
+      <div id="photoPlaceholder" class="photo-placeholder">
+        Foto alat belum tersedia.
+      </div>
+
+      <div class="photo-caption">FOTO ALAT INVENTARIS</div>
+    </div>
+
+    <div class="item-info">
+      <div>ID Alat: <b id="itemId"></b></div>
+      <div>Nama Alat: <b id="itemName"></b></div>
+      <div>Jumlah Total: <b id="itemTotal"></b></div>
+      <div>Jumlah Dipakai: <b id="itemUsed"></b></div>
+      <div>Jumlah Tersedia: <b id="itemAvailable"></b></div>
+      <div>Kondisi: <b id="itemCondition"></b></div>
+      <div>Lokasi / PIC: <b id="itemLocation"></b></div>
+    </div>
+
+    <label for="type">Jenis Transaksi</label>
+    <select id="type">
+      <option value="KELUAR">BARANG KELUAR</option>
+      <option value="MASUK">BARANG MASUK</option>
+    </select>
+
+    <label for="qty">Jumlah Alat</label>
+    <input id="qty" type="number" min="1" step="1" value="1">
+
+    <label for="pic">Nama PIC / Petugas</label>
+    <input id="pic" type="text" placeholder="Masukkan nama PIC">
+
+    <label for="note">Keterangan (Opsional)</label>
+    <textarea id="note" rows="2"
+      placeholder="Contoh: Dibawa ke proyek A"></textarea>
+
+    <button class="btn-save" id="saveBtn" onclick="saveData()">
+      SIMPAN TRANSAKSI
+    </button>
+
+    <button class="btn-reset" onclick="resetForm()">
+      BATAL / SCAN ALAT LAIN
+    </button>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+
+  <div class="footer">
+    Sistem Inventaris Alat Kerja By M.Rizky Fauzan<br>
+    SOLUSI UTAMA KREASINDO
+  </div>
+</div>
+</div>
+</body>
+</html>
