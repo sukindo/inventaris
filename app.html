@@ -963,6 +963,7 @@ let bridgeOrigin = "";
 
 window.addEventListener('message', function(event) {
   const data = event.data || {};
+  console.log("PESAN DARI IFRAME:", event.origin, event.data);
 
   // Terima pesan READY hanya dari domain sandbox Apps Script.
   const isGoogleBridge =
