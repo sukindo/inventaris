@@ -957,13 +957,52 @@ function adminLogout() {
     resolveBridgeReady = resolve;
   });
 
- window.addEventListener('message', function(event) {
-    console.log("PESAN DITERIMA:", {
-      origin: event.origin,
-      data: event.data,
-      sumberCocok: !!bridgeFrame &&
-        event.source === bridgeFrame.contentWindow
-    });
+ 
+let bridgeWindow = null;
+let bridgeOrigin = "";
+
+window.addEventListener('message', function(event) {
+  const data = event.data || {};
+
+  // Terima pesan READY hanya dari domain sandbox Apps Script.
+  const isGoogleBridge =
+    /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/i
+      .test(event.origin);
+
+  if (data.type === 'INVENTORY_BRIDGE_READY') {
+    if (!isGoogleBridge) return;
+
+    bridgeWindow = event.source;
+    bridgeOrigin = event.origin;
+
+    bridgeReady = true;
+    resolveBridgeReady();
+
+    console.log("BRIDGE TERHUBUNG:", bridgeOrigin);
+    return;
+  }
+
+  // Respons hanya diterima dari frame Bridge yang sudah terdaftar.
+  if (!bridgeWindow || event.source !== bridgeWindow) return;
+  if (event.origin !== bridgeOrigin) return;
+
+  if (data.type !== 'INVENTORY_RESPONSE') return;
+
+  const pending = pendingRequests.get(data.requestId);
+  if (!pending) return;
+
+  clearTimeout(pending.timeout);
+  pendingRequests.delete(data.requestId);
+
+  if (data.success) {
+    pending.resolve(data.result);
+  } else {
+    pending.reject(
+      new Error(data.error || 'Terjadi kesalahan pada backend.')
+    );
+  }
+});
+
 
     // Hanya menerima pesan dari iframe Bridge yang kita pasang.
     if (!bridgeFrame || event.source !== bridgeFrame.contentWindow) return;
@@ -1017,12 +1056,12 @@ function adminLogout() {
         timeout: timeout
       });
 
-      bridgeFrame.contentWindow.postMessage({
+      bridgeWindow.postMessage({
         type: 'INVENTORY_REQUEST',
         requestId: requestId,
         action: action,
         args: args
-      }, '*');
+      }, bridgeOrigin);
     });
   }
 
