@@ -970,7 +970,194 @@ function editAdminItem(button) {
   body.innerHTML = html;
 }
 
+function showAddInventoryForm() {
+  const content = document.getElementById('adminContent');
+  const title = document.getElementById('adminContentTitle');
+  const body = document.getElementById('adminContentBody');
 
+  title.textContent = 'TAMBAH ALAT BARU';
+  content.classList.remove('hidden');
+
+  let html = '<h3>FORM TAMBAH ALAT</h3>';
+
+  html += '<label>Kategori / Kode Alat</label>';
+  html += '<select id="addKategori">';
+  html += '<option value="">-- Pilih Kategori --</option>';
+  html += '<option value="GRD">Gerinda Duduk</option>';
+  html += '<option value="GRM">Gerinda Makita</option>';
+  html += '<option value="GRB">Gerinda Bosch</option>';
+  html += '<option value="TLR">Trafo Las RYU</option>';
+  html += '<option value="TLA">Trafo Las ABU</option>';
+  html += '<option value="BLM">Bor Listrik Makita</option>';
+  html += '<option value="BDM">Bor Dril Makita</option>';
+  html += '<option value="BBM">Bor Batrai Makita</option>';
+  html += '<option value="IMP">Impact</option>';
+  html += '<option value="HGI">Hotgun Ijo</option>';
+  html += '<option value="HGM">Hotgun Merah</option>';
+  html += '<option value="TRV">Tembak Rivet</option>';
+  html += '<option value="TSL">Tembak Silent</option>';
+  html += '</select>';
+
+  html += '<label>Nama Alat</label>';
+  html += '<input id="addNama" placeholder="Masukkan nama alat">';
+
+  html += '<label>Status Penggunaan</label>';
+  html += '<select id="addStatus" onchange="updateAddPICVisibility()">';
+  html += '<option value="Tersimpan">Tersimpan</option>';
+  html += '<option value="Dipakai Produksi">Dipakai Produksi</option>';
+  html += '<option value="Dipakai Pemasangan">Dipakai Pemasangan</option>';
+  html += '</select>';
+
+  html += '<div id="addPICWrap" class="hidden">';
+  html += '<label>PIC</label>';
+  html += '<select id="addPIC">';
+  html += '<option value="">-- Pilih PIC --</option>';
+  html += '</select>';
+  html += '</div>';
+
+  html += '<label>Kondisi Fisik</label>';
+  html += '<select id="addKondisi">';
+  html += '<option value="Baik">Baik</option>';
+  html += '<option value="Rusak">Rusak</option>';
+  html += '<option value="Perlu Perbaikan">Perlu Perbaikan</option>';
+  html += '</select>';
+
+  html += '<label>Lokasi</label>';
+  html += '<input id="addLokasi" placeholder="Masukkan lokasi alat">';
+
+  html += '<label>Foto Alat</label>';
+  html += '<input type="file" id="addFoto" accept="image/*">';
+
+  html += '<p class="small-note">';
+  html += 'ID alat dan QR Code akan dibuat otomatis berdasarkan kategori.';
+  html += '</p>';
+
+  html += '<button class="btn-save" onclick="saveNewInventory(this)">';
+  html += 'SIMPAN ALAT BARU</button>';
+
+  html += '<button class="btn-reset" onclick="loadAdminInventory()">';
+  html += 'BATAL</button>';
+
+  body.innerHTML = html;
+
+  loadAddPICList();
+}
+
+
+function updateAddPICVisibility() {
+  const status = document.getElementById('addStatus').value;
+  const wrap = document.getElementById('addPICWrap');
+
+  wrap.classList.toggle('hidden', status === 'Tersimpan');
+}
+
+
+function loadAddPICList() {
+  const select = document.getElementById('addPIC');
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      picList = Array.isArray(data) ? data : [];
+
+      select.innerHTML = '<option value="">-- Pilih PIC --</option>';
+
+      picList.forEach(function(item) {
+        const option = document.createElement('option');
+        option.value = item.nama;
+        option.textContent =
+          item.nama + (item.status === 'Libur' ? ' (Libur)' : '');
+        select.appendChild(option);
+      });
+    })
+    .withFailureHandler(function(error) {
+      alert(error.message || 'Gagal memuat daftar PIC.');
+    })
+    .adminGetPIC(adminToken);
+}
+
+  
+function saveNewInventory(button) {
+  const kategori = document.getElementById('addKategori').value;
+  const nama = document.getElementById('addNama').value.trim();
+  const status = document.getElementById('addStatus').value;
+  const pic = status === 'Tersimpan'
+    ? ''
+    : document.getElementById('addPIC').value;
+  const kondisi = document.getElementById('addKondisi').value;
+  const lokasi = document.getElementById('addLokasi').value.trim();
+  const fotoInput = document.getElementById('addFoto');
+
+  if (!kategori) {
+    alert('Silakan pilih kategori alat.');
+    return;
+  }
+
+  if (!nama) {
+    alert('Nama alat wajib diisi.');
+    return;
+  }
+
+  if (status !== 'Tersimpan' && !pic) {
+    alert('Silakan pilih PIC.');
+    return;
+  }
+
+  if (!fotoInput.files || !fotoInput.files[0]) {
+    alert('Silakan pilih foto alat.');
+    return;
+  }
+
+  const file = fotoInput.files[0];
+
+  if (!file.type.startsWith('image/')) {
+    alert('File harus berupa gambar.');
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert('Ukuran foto maksimal 2 MB.');
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'MENYIMPAN...';
+
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    const form = {
+      kategori: kategori,
+      nama: nama,
+      status: status,
+      pic: pic,
+      kondisi: kondisi,
+      lokasi: lokasi,
+      foto: event.target.result
+    };
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        alert(result.message || 'Alat berhasil ditambahkan.');
+        loadAdminInventory();
+      })
+      .withFailureHandler(function(error) {
+        alert(error.message || 'Gagal menyimpan alat.');
+
+        button.disabled = false;
+        button.textContent = 'SIMPAN ALAT BARU';
+      })
+      .adminAddInventory(adminToken, form);
+  };
+
+  reader.onerror = function() {
+    alert('Gagal membaca foto.');
+    button.disabled = false;
+    button.textContent = 'SIMPAN ALAT BARU';
+  };
+
+  reader.readAsDataURL(file);
+}
+  
 function optionHtml(value, selected) {
   return '<option value="' + escapeHtml(value) + '"' +
     (value === selected ? ' selected' : '') +
@@ -1851,6 +2038,10 @@ window.addEventListener('load', function() {
 
       <button class="btn-scan" onclick="loadAdminInventory()">
         DATABASE INVENTARIS
+      </button>
+
+      <button class="btn-save" onclick="showAddInventoryForm()">
+        + TAMBAH ALAT
       </button>
 
       <button class="btn-save" onclick="loadAdminHistory()">
