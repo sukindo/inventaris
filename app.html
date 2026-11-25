@@ -688,46 +688,56 @@ td button {
     });
   }
 
-  function createRunner(successHandler, failureHandler) {
-    return new Proxy({}, {
-      get: function(_, property) {
-        if (property === 'withSuccessHandler') {
-          return function(handler) {
-            return createRunner(handler, failureHandler);
-          };
-        }
-
-        if (property === 'withFailureHandler') {
-          return function(handler) {
-            return createRunner(successHandler, handler);
-          };
-        }
-
-        if (property === 'withUserObject') {
-          return function() {
-            return createRunner(successHandler, failureHandler);
-          };
-        }
-
-        return function(...args) {
-          callBackend(String(property), ...args)
-            .then(function(result) {
-              if (typeof successHandler === 'function') {
-                successHandler(result);
-              }
-            })
-            .catch(function(error) {
-              if (typeof failureHandler === 'function') {
-                failureHandler(error);
-              } else {
-                console.error(error);
-                alert(error.message || 'Kesalahan backend.');
-              }
-            });
+  
+function createRunner(successHandler, failureHandler) {
+  return new Proxy({}, {
+    get: function(_, property) {
+      if (property === 'withSuccessHandler') {
+        return function(handler) {
+          return createRunner(handler, failureHandler);
         };
       }
-    });
-  }
+
+      if (property === 'withFailureHandler') {
+        return function(handler) {
+          return createRunner(successHandler, handler);
+        };
+      }
+
+      if (property === 'withUserObject') {
+        return function() {
+          return createRunner(successHandler, failureHandler);
+        };
+      }
+
+      return function(...args) {
+        callBackend(String(property), ...args).then(
+          function(result) {
+            if (typeof successHandler === 'function') {
+              try {
+                successHandler(result);
+              } catch (error) {
+                console.error('Kesalahan callback sukses:', error);
+                alert(
+                  'Data berhasil diproses, tetapi tampilan gagal diperbarui. Silakan muat ulang halaman.'
+                );
+              }
+            }
+          },
+          function(error) {
+            if (typeof failureHandler === 'function') {
+              failureHandler(error);
+            } else {
+              console.error(error);
+              alert(error.message || 'Kesalahan backend.');
+            }
+          }
+        );
+      };
+    }
+  });
+}
+
 
   window.google = {
     script: {
