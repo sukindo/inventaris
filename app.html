@@ -1070,7 +1070,7 @@ function loadAddPICList() {
   
 
 function saveNewInventory(button) {
-  const nama = document.getElementById('addNama').value.trim();
+  const nama = document.getElementById('addNama').value.trim().toUpperCase();
   const status = document.getElementById('addStatus').value;
   const kondisi = document.getElementById('addKondisi').value;
   const pic = document.getElementById('addPIC').value;
