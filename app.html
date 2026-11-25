@@ -1142,9 +1142,9 @@ function saveNewInventory(button) {
 
     google.script.run
       .withSuccessHandler(function(result) {
-        alert(result.message || 'Alat berhasil ditambahkan.');
-        window.location.reload();
-      })
+  alert(result.message || 'Alat berhasil ditambahkan.');
+  loadAdminInventory();
+})
       .withFailureHandler(function(error) {
         alert('Gagal menyimpan alat: ' + error.message);
         button.disabled = false;
