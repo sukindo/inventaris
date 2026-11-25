@@ -13,176 +13,575 @@
 </script>
 
 <style>
-* { box-sizing: border-box; }
+
+/* ==========================================
+   MODERN CORPORATE BLUE
+   SOLUSI UTAMA KREASINDO
+========================================== */
+
+:root {
+  --primary: #174a78;
+  --primary-dark: #103657;
+  --primary-light: #eaf2fa;
+  --accent: #2878bd;
+  --success: #168653;
+  --success-light: #e5f6ed;
+  --danger: #c43d43;
+  --danger-light: #fff0f0;
+  --warning: #a66a12;
+  --text: #243449;
+  --muted: #718096;
+  --border: #e1e8f0;
+  --surface: #ffffff;
+  --background: #f3f6fb;
+  --shadow: 0 8px 28px rgba(25, 55, 90, .07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f1f4f8;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, #e8f1fb 0, transparent 35%),
+    var(--background);
   margin: 0;
-  padding: 16px;
-  color: #263445;
+  padding: 28px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
 }
+
+/* LEBAR HALAMAN */
 
 .container {
-  max-width: 650px;
-  margin: auto;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
 }
+
+#portalPage .container {
+  max-width: 560px;
+}
+
+#adminLoginPage .container {
+  max-width: 500px;
+}
+
+#adminDashboardPage .container {
+  max-width: 1180px;
+}
+
+#staffPage .container {
+  max-width: 900px;
+}
+
+/* HEADER */
 
 .header {
-  background: #1f4e78;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #103657, #174a78 60%, #2878bd);
   color: white;
-  text-align: center;
-  padding: 22px 15px;
-  border-radius: 14px;
-  margin-bottom: 16px;
+  text-align: left;
+  padding: 30px 32px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 28px rgba(23, 74, 120, .18);
 }
 
-.header h2 { margin: 0 0 6px; }
+.header::after {
+  content: "";
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border: 35px solid rgba(255,255,255,.07);
+  border-radius: 50%;
+  right: -65px;
+  top: -95px;
+}
+
+.header h2 {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 7px;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+.header div {
+  position: relative;
+  z-index: 1;
+  color: rgba(255,255,255,.83);
+  font-size: 14px;
+}
+
+/* KARTU */
 
 .card {
-  background: white;
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 8px #00000010;
+  background: var(--surface);
+  border: 1px solid rgba(225,232,240,.9);
+  border-radius: 18px;
+  padding: 26px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
 }
+
+.card h3 {
+  color: var(--primary-dark);
+  font-size: 18px;
+  font-weight: 750;
+  margin: 0 0 18px;
+}
+
+.section-title {
+  margin-top: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* FORM */
 
 label {
   display: block;
-  font-weight: bold;
-  margin: 14px 0 6px;
+  font-weight: 650;
+  font-size: 13px;
+  color: #42546a;
+  margin: 17px 0 7px;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
+  display: block;
   width: 100%;
-  padding: 13px;
-  border: 1px solid #ccd4df;
-  border-radius: 8px;
-  font-size: 16px;
-  background: white;
+  padding: 13px 15px;
+  border: 1px solid #d5deea;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: #fbfcfe;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
 }
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(40,120,189,.11);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 75px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9aa8b8;
+}
+
+/* TOMBOL */
 
 button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 9px;
-  font-size: 15px;
-  font-weight: bold;
+  min-height: 46px;
+  padding: 13px 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .15px;
   cursor: pointer;
   margin-top: 12px;
+  transition: transform .18s, box-shadow .18s, background .18s;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(20,50,80,.12);
+}
+
+button:active:not(:disabled) {
+  transform: scale(.98);
 }
 
 button:disabled {
-  opacity: .6;
+  opacity: .55;
   cursor: not-allowed;
 }
 
-.btn-scan { background: #1f4e78; color: white; }
-.btn-save { background: #18864b; color: white; }
-.btn-stop { background: #64748b; color: white; }
-.btn-manual { background: #e8edf4; color: #263445; }
-.btn-reset { background: #64748b; color: white; }
-.btn-edit { background: #e8edf4; color: #263445; }
+.btn-scan {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-scan:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.btn-save {
+  background: var(--success);
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #116c42;
+}
+
+.btn-stop,
+.btn-reset {
+  background: #64748b;
+  color: white;
+}
+
+.btn-manual,
+.btn-edit {
+  background: #edf3f9;
+  color: var(--primary);
+  border-color: #dce7f2;
+}
+
+/* PORTAL UTAMA */
+
+#portalPage .card {
+  text-align: center;
+  padding: 35px;
+}
+
+#portalPage .card h3 {
+  font-size: 21px;
+}
+
+#portalPage .card p {
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+
+#portalPage .btn-scan,
+#portalPage .btn-save {
+  min-height: 54px;
+  font-size: 15px;
+}
+
+/* DASHBOARD ADMIN */
+
+#adminDashboardPage .card:first-child {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+
+#adminDashboardPage .card:first-child h3 {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+}
+
+#adminDashboardPage .card:first-child button {
+  margin: 0;
+  min-height: 52px;
+}
+
+#adminContent {
+  overflow: hidden;
+}
+
+/* INFORMASI ALAT */
 
 .item-info {
-  background: #edf4fa;
-  padding: 13px;
-  border-radius: 9px;
-  margin-top: 12px;
-  line-height: 1.9;
+  background: linear-gradient(135deg, #edf4fb, #f6f9fd);
+  border: 1px solid #dce8f4;
+  padding: 19px;
+  border-radius: 13px;
+  margin-top: 15px;
+  line-height: 2;
   overflow-wrap: anywhere;
 }
 
+.item-info b {
+  color: var(--primary-dark);
+}
+
+/* FOTO ALAT */
+
 .item-photo-wrap {
-  margin: 15px 0;
-  background: #f1f4f8;
-  border-radius: 12px;
-  padding: 10px;
+  margin: 16px 0;
+  background: #f5f8fc;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 16px;
   text-align: center;
 }
 
 .item-photo {
   display: block;
   width: 100%;
-  max-height: 280px;
+  max-height: 340px;
   object-fit: contain;
-  border-radius: 9px;
+  border-radius: 10px;
 }
 
 .photo-caption {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-top: 12px;
 }
 
 .photo-placeholder {
-  padding: 35px 10px;
-  color: #64748b;
+  padding: 45px 10px;
+  color: var(--muted);
   font-size: 14px;
 }
 
-.hidden { display: none !important; }
+/* SCANNER */
+
+#reader {
+  width: 100%;
+  max-width: 520px;
+  margin: 15px auto;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+#reader video {
+  border-radius: 12px;
+}
+
+#reader img {
+  max-width: 100%;
+}
+
+/* STATUS / NOTIFIKASI */
 
 .status {
-  padding: 12px;
-  border-radius: 8px;
-  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 11px;
+  margin: 14px 0;
   display: none;
-  line-height: 1.5;
+  line-height: 1.6;
   overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .success {
   display: block;
-  background: #d9f5e5;
-  color: #126b38;
+  background: var(--success-light);
+  color: #126b42;
+  border: 1px solid #c7ebd7;
 }
 
 .error {
   display: block;
-  background: #ffe1e1;
+  background: var(--danger-light);
   color: #a32222;
+  border: 1px solid #f4cccc;
 }
 
-.footer {
-  text-align: center;
-  color: #718096;
-  font-size: 12px;
-  margin-top: 20px;
-}
+/* TABEL ADMIN */
 
 .table-wrap {
   width: 100%;
   overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  margin-top: 15px;
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 600px;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 700px;
   font-size: 13px;
+  background: white;
 }
 
-th, td {
-  border: 1px solid #dce2e9;
-  padding: 9px;
+th,
+td {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 13px 14px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 th {
-  background: #edf4fa;
+  background: #edf3f9;
+  color: var(--primary-dark);
+  font-weight: 750;
+  white-space: nowrap;
 }
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover,
+table tr:hover td {
+  background: #f8fbff;
+}
+
+td button {
+  width: auto;
+  min-width: 85px;
+  min-height: 36px;
+  padding: 8px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+/* TEKS PENDUKUNG */
 
 .small-note {
   font-size: 12px;
-  color: #64748b;
-  line-height: 1.5;
+  color: var(--muted);
+  line-height: 1.7;
+  background: #f6f8fb;
+  padding: 12px;
+  border-radius: 9px;
 }
 
-.section-title {
-  margin-top: 0;
+.footer {
+  text-align: center;
+  color: #8290a1;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 26px 0 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* TABLET */
+
+@media (max-width: 900px) {
+  body {
+    padding: 20px;
+  }
+
+  .container,
+  #adminDashboardPage .container,
+  #staffPage .container {
+    max-width: 100%;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
+  #adminDashboardPage .card:first-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .header {
+    padding: 25px;
+  }
+}
+
+/* HANDPHONE */
+
+@media (max-width: 600px) {
+  body {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+
+  .header {
+    padding: 23px 20px;
+    border-radius: 15px;
+    margin-bottom: 15px;
+  }
+
+  .header h2 {
+    font-size: 21px;
+  }
+
+  .header div {
+    font-size: 12px;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 14px;
+    margin-bottom: 14px;
+  }
+
+  .card h3 {
+    font-size: 16px;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 13px;
+    font-size: 16px;
+  }
+
+  button {
+    min-height: 48px;
+  }
+
+  #portalPage .card {
+    padding: 24px 19px;
+  }
+
+  #adminDashboardPage .card:first-child {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  #adminDashboardPage .card:first-child h3 {
+    margin-bottom: 5px;
+  }
+
+  .item-info {
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+
+  .item-photo {
+    max-height: 240px;
+  }
+
+  #reader {
+    max-width: 100%;
+  }
+
+  .table-wrap {
+    border-radius: 10px;
+  }
+
+  table {
+    min-width: 700px;
+  }
+
+  .footer {
+    margin-top: 20px;
+  }
 }
 </style>
 </head>
