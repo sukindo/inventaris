@@ -857,7 +857,38 @@ function loadAdminInventory() {
   google.script.run
     .withSuccessHandler(function(data) {
       title.textContent = 'DATABASE INVENTARIS';
-      content.classList.remove('hidden');
+content.classList.remove('hidden');
+
+let toolbar = document.getElementById('inventoryToolbar');
+
+if (!toolbar) {
+  toolbar = document.createElement('div');
+  toolbar.id = 'inventoryToolbar';
+
+  toolbar.style.display = 'flex';
+  toolbar.style.gap = '10px';
+  toolbar.style.flexWrap = 'wrap';
+  toolbar.style.marginBottom = '18px';
+
+  body.parentNode.insertBefore(toolbar, body);
+}
+
+toolbar.innerHTML = `
+  <button class="btn-edit" type="button"
+    onclick="showEditInventoryPrompt()">
+    EDIT ALAT
+  </button>
+
+  <button class="btn-save" type="button"
+    onclick="showAddInventoryForm()">
+    + TAMBAH ALAT
+  </button>
+
+  <button class="btn-delete" type="button"
+    onclick="showDeleteInventoryPrompt()">
+    HAPUS ALAT
+  </button>
+`;
 
       if (!data || data.length === 0) {
         body.innerHTML = '<p>Belum ada data inventaris.</p>';
@@ -979,6 +1010,33 @@ function editAdminItem(button) {
 
   body.innerHTML = html;
 }
+
+  
+function showEditInventoryPrompt() {
+  const id = prompt('Masukkan ID alat yang ingin diedit:');
+
+  if (!id) return;
+
+  const targetId = id.trim().toUpperCase();
+
+  const tombolEdit = document.querySelectorAll(
+    '#adminContentBody button.btn-edit'
+  );
+
+  let ditemukan = false;
+
+  tombolEdit.forEach(function(button) {
+    if (button.dataset.id.toUpperCase() === targetId) {
+      editAdminItem(button);
+      ditemukan = true;
+    }
+  });
+
+  if (!ditemukan) {
+    alert('ID alat tidak ditemukan dalam database.');
+  }
+}
+
 
 function showAddInventoryForm() {
   const content = document.getElementById('adminContent');
@@ -1173,7 +1231,7 @@ function optionHtml(value, selected) {
 function saveAdminItem(button) {
   const form = {
     id: button.dataset.id,
-    nama: document.getElementById('editNama').value.trim(),
+    nama: document.getElementById('editNama').value.trim().toUpperCase(),
     status: document.getElementById('editStatus').value,
     kondisi: document.getElementById('editKondisi').value,
     pic: document.getElementById('editPIC').value,
@@ -1211,6 +1269,41 @@ function saveAdminItem(button) {
       alert(error.message || 'Gagal menyimpan perubahan.');
     })
     .adminUpdateInventory(adminToken, form);
+}
+
+
+function showDeleteInventoryPrompt() {
+  const id = prompt('Masukkan ID alat yang ingin dihapus:');
+
+  if (!id || !id.trim()) return;
+
+  const targetId = id.trim().toUpperCase();
+
+  const konfirmasi = confirm(
+    'PERINGATAN!\n\n' +
+    'Apakah kamu yakin ingin menghapus alat dengan ID ' +
+    targetId + '?\n\n' +
+    'Data alat akan dihapus dari database dan foto terkait ' +
+    'akan dipindahkan ke sampah Google Drive.'
+  );
+
+  if (!konfirmasi) return;
+
+  const status = document.getElementById('adminStatus');
+
+  status.textContent = 'Menghapus data alat...';
+  status.className = 'status success';
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      alert(result.message || 'Alat berhasil dihapus.');
+      loadAdminInventory();
+    })
+    .withFailureHandler(function(error) {
+      status.textContent = error.message || 'Gagal menghapus alat.';
+      status.className = 'status error';
+    })
+    .adminDeleteInventory(adminToken, targetId);
 }
 
 
@@ -2043,10 +2136,6 @@ window.addEventListener('load', function() {
 
       <button class="btn-scan" onclick="loadAdminInventory()">
         DATABASE INVENTARIS
-      </button>
-
-      <button class="btn-save" onclick="showAddInventoryForm()">
-        + TAMBAH ALAT
       </button>
 
       <button class="btn-save" onclick="loadAdminHistory()">
