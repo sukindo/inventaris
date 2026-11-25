@@ -979,25 +979,7 @@ function showAddInventoryForm() {
   content.classList.remove('hidden');
 
   let html = '<h3>FORM TAMBAH ALAT</h3>';
-
-  html += '<label>Kategori / Kode Alat</label>';
-  html += '<select id="addKategori">';
-  html += '<option value="">-- Pilih Kategori --</option>';
-  html += '<option value="GRD">Gerinda Duduk</option>';
-  html += '<option value="GRM">Gerinda Makita</option>';
-  html += '<option value="GRB">Gerinda Bosch</option>';
-  html += '<option value="TLR">Trafo Las RYU</option>';
-  html += '<option value="TLA">Trafo Las ABU</option>';
-  html += '<option value="BLM">Bor Listrik Makita</option>';
-  html += '<option value="BDM">Bor Dril Makita</option>';
-  html += '<option value="BBM">Bor Batrai Makita</option>';
-  html += '<option value="IMP">Impact</option>';
-  html += '<option value="HGI">Hotgun Ijo</option>';
-  html += '<option value="HGM">Hotgun Merah</option>';
-  html += '<option value="TRV">Tembak Rivet</option>';
-  html += '<option value="TSL">Tembak Silent</option>';
-  html += '</select>';
-
+  
   html += '<label>Nama Alat</label>';
   html += '<input id="addNama" placeholder="Masukkan nama alat">';
 
@@ -1029,7 +1011,7 @@ function showAddInventoryForm() {
   html += '<input type="file" id="addFoto" accept="image/*">';
 
   html += '<p class="small-note">';
-  html += 'ID alat dan QR Code akan dibuat otomatis berdasarkan kategori.';
+  html += 'IKode ID dan QR Code akan dibuat otomatis berdasarkan nama alat.';
   html += '</p>';
 
   html += '<button class="btn-save" onclick="saveNewInventory(this)">';
@@ -1076,41 +1058,44 @@ function loadAddPICList() {
 }
 
   
+
 function saveNewInventory(button) {
-  const kategori = document.getElementById('addKategori').value;
   const nama = document.getElementById('addNama').value.trim();
   const status = document.getElementById('addStatus').value;
-  const pic = status === 'Tersimpan'
-    ? ''
-    : document.getElementById('addPIC').value;
   const kondisi = document.getElementById('addKondisi').value;
+  const pic = document.getElementById('addPIC').value;
   const lokasi = document.getElementById('addLokasi').value.trim();
-  const fotoInput = document.getElementById('addFoto');
 
-  if (!kategori) {
-    alert('Silakan pilih kategori alat.');
-    return;
-  }
+  const fotoInput = document.getElementById('addFoto');
+  const file = fotoInput.files[0];
 
   if (!nama) {
     alert('Nama alat wajib diisi.');
     return;
   }
 
+  if (!status) {
+    alert('Silakan pilih status penggunaan.');
+    return;
+  }
+
+  if (!kondisi) {
+    alert('Silakan pilih kondisi fisik.');
+    return;
+  }
+
   if (status !== 'Tersimpan' && !pic) {
-    alert('Silakan pilih PIC.');
+    alert('Silakan pilih PIC untuk alat yang sedang digunakan.');
     return;
   }
 
-  if (!fotoInput.files || !fotoInput.files[0]) {
-    alert('Silakan pilih foto alat.');
+  if (status === 'Tersimpan' && pic) {
+    alert('Alat berstatus Tersimpan tidak boleh memiliki PIC.');
     return;
   }
 
-  const file = fotoInput.files[0];
-
-  if (!file.type.startsWith('image/')) {
-    alert('File harus berupa gambar.');
+  if (!file) {
+    alert('Foto alat wajib diunggah.');
     return;
   }
 
@@ -1119,18 +1104,28 @@ function saveNewInventory(button) {
     return;
   }
 
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert('Format foto harus JPG, PNG, atau WEBP.');
+    return;
+  }
+
   button.disabled = true;
-  button.textContent = 'MENYIMPAN...';
+  button.textContent = 'Menyimpan...';
 
   const reader = new FileReader();
 
   reader.onload = function(event) {
     const form = {
-      kategori: kategori,
       nama: nama,
       status: status,
-      pic: pic,
       kondisi: kondisi,
+      pic: pic,
       lokasi: lokasi,
       foto: event.target.result
     };
@@ -1138,25 +1133,25 @@ function saveNewInventory(button) {
     google.script.run
       .withSuccessHandler(function(result) {
         alert(result.message || 'Alat berhasil ditambahkan.');
-        loadAdminInventory();
+        showAdminInventory();
       })
       .withFailureHandler(function(error) {
-        alert(error.message || 'Gagal menyimpan alat.');
-
+        alert('Gagal menyimpan alat: ' + error.message);
         button.disabled = false;
-        button.textContent = 'SIMPAN ALAT BARU';
+        button.textContent = 'Simpan Alat';
       })
       .adminAddInventory(adminToken, form);
   };
 
   reader.onerror = function() {
-    alert('Gagal membaca foto.');
+    alert('Gagal membaca file foto.');
     button.disabled = false;
-    button.textContent = 'SIMPAN ALAT BARU';
+    button.textContent = 'Simpan Alat';
   };
 
   reader.readAsDataURL(file);
 }
+
   
 function optionHtml(value, selected) {
   return '<option value="' + escapeHtml(value) + '"' +
