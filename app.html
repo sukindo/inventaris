@@ -905,7 +905,6 @@ toolbar.innerHTML = `
       html += '<th>Kondisi</th>';
       html += '<th>PIC</th>';
       html += '<th>Lokasi</th>';
-      html += '<th>Aksi</th>';
       html += '</tr>';
 
       data.forEach(function(item) {
@@ -917,7 +916,6 @@ toolbar.innerHTML = `
         html += '<td>' + escapeHtml(item.pic) + '</td>';
         html += '<td>' + escapeHtml(item.lokasi) + '</td>';
         html += '<td>';
-        html += '<button class="btn-edit" type="button"';
         html += ' onclick="editAdminItem(this)"';
         html += ' data-id="' + escapeHtml(item.id) + '"';
         html += ' data-nama="' + escapeHtml(item.nama) + '"';
